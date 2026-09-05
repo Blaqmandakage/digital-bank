@@ -29,6 +29,11 @@ const customerSchema = new mongoose.Schema(
             trim: true
         },
 
+        dob: {
+            type: Date,
+            required: true
+        },
+
         password: {
             type: String,
             required: true

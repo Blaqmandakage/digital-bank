@@ -11,7 +11,8 @@ exports.register = async (req, res) => {
             lastName,
             email,
             phone,
-            password
+            password,
+            dob,
         } = req.body;
 
         // Check if customer already exists
@@ -34,6 +35,7 @@ exports.register = async (req, res) => {
             lastName,
             email,
             phone,
+            dob,
             password: hashedPassword
         });
 
@@ -44,7 +46,8 @@ exports.register = async (req, res) => {
                 firstName: customer.firstName,
                 lastName: customer.lastName,
                 email: customer.email,
-                phone: customer.phone
+                phone: customer.phone,
+                dob: customer.dob
             }
         });
 
@@ -168,3 +171,5 @@ exports.getProfile = async (req, res) => {
         }
     });
 };
+
+
