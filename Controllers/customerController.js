@@ -1,4 +1,10 @@
+// const Customer = require("../models/Customer");
+// const bcrypt = require("bcryptjs");
+// const jwt = require("jsonwebtoken");
 const Customer = require("../models/Customer");
+const Account = require("../models/Account");
+const Transaction = require("../models/Transactions");
+
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -173,3 +179,39 @@ exports.getProfile = async (req, res) => {
 };
 
 
+
+exports.getMyTransactions = async (req, res) => {
+  try {
+    // Find all accounts belonging to the logged-in customer
+    const accounts = await Account.find({
+      customer: req.customer._id,
+    });
+
+    const accountIds = accounts.map((account) => account._id);
+
+    // Find transactions where the customer is
+    // either the sender or the receiver
+    const transactions = await Transaction.find({
+      $or: [
+        { senderAccount: { $in: accountIds } },
+        { receiverAccount: { $in: accountIds } },
+      ],
+    })
+      .populate("senderAccount", "accountNumber accountName")
+      .populate("receiverAccount", "accountNumber accountName")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      message: "Customer transactions retrieved successfully",
+      count: transactions.length,
+      data: transactions,
+    });
+  } catch (error) {
+    console.error("Get customer transactions error:", error);
+
+    res.status(500).json({
+      message: "Failed to retrieve customer transactions",
+      error: error.message,
+    });
+  }
+};

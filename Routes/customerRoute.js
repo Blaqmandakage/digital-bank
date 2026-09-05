@@ -7,6 +7,11 @@ const router = express.Router();
 router.post("/register", customerController.register);
 router.post("/login", customerController.login);
 router.get("/profile", protect, customerController.getProfile);
+router.get(
+  "/transactions",
+  protect,
+  customerController.getMyTransactions
+);
 
 
 module.exports = router;

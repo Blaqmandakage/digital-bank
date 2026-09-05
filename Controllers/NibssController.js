@@ -1,5 +1,6 @@
 const nibssService = require("../Services/nibssService");
 const Account = require("../models/Account");
+const Transaction = require("../models/Transactions");
 
 // Onboard fintech controller function to be called from the route
 
@@ -118,51 +119,7 @@ exports.createAccount = async (req, res) => {
   }
 };
 
-// exports.createAccount = async (req, res) => {
-//     try {
-//         const { token, kycType, kycID, dob } = req.body;
 
-//         if (!token || !kycType || !kycID || !dob) {
-//             return res.status(400).json({
-//                 message: "token, kycType, kycID and dob are required"
-//             });
-//         }
-
-//         const result = await nibssService.createAccount(
-//             token,
-//             kycType,
-//             kycID,
-//             dob
-//         );
-
-//         console.log("NIBSS ACCOUNT RESULT:", result);
-//      const account = await Account.create({
-//         customer: req.customer._id,
-//         accountNumber: result.account.accountNumber,
-//         accountName: result.account.accountName,
-//         bankCode: result.account.bankCode,
-//         bankName: "Phoenix Bank",
-//         kycType: result.account.kycType,
-//         kycID: result.account.kycID
-// });
-
-//         res.status(201).json({
-//             message: "Account created successfully",
-//             data: result
-//         });
-
-//     } catch (error) {
-//         console.error(
-//             "NIBSS account creation error:",
-//             error.response?.data || error.message
-//         );
-
-//         res.status(error.response?.status || 500).json({
-//             message: "Failed to create account",
-//             error: error.response?.data || error.message
-//         });
-//     }
-// };
 
 // Get logged-in customer's accounts
 exports.getMyAccounts = async (req, res) => {
@@ -250,38 +207,7 @@ exports.validateBvn = async (req, res) => {
     });
   }
 };
-// exports.validateBvn = async (req, res) => {
-//     try {
-//         const { token, bvn } = req.body;
 
-//         if (!token || !bvn) {
-//             return res.status(400).json({
-//                 message: "token and bvn are required"
-//             });
-//         }
-
-//         const result = await nibssService.validateBvn(
-//             token,
-//             bvn
-//         );
-
-//         res.status(200).json({
-//             message: "BVN validated successfully",
-//             data: result
-//         });
-
-//     } catch (error) {
-//         console.error(
-//             "NIBSS BVN validation error:",
-//             error.response?.data || error.message
-//         );
-
-//         res.status(error.response?.status || 500).json({
-//             message: "Failed to validate BVN",
-//             error: error.response?.data || error.message
-//         });
-//     }
-// };
 
 // Account name enquiry
 
@@ -326,16 +252,65 @@ exports.transfer = async (req, res) => {
       });
     }
 
-    const result = await nibssService.transfer(token, from, to, amount);
+    if (amount <= 0) {
+      return res.status(400).json({
+        message: "Amount must be greater than 0",
+      });
+    }
+
+    // Make sure the sender account belongs to the logged-in customer
+    const senderAccount = await Account.findOne({
+      accountNumber: from,
+      customer: req.customer._id,
+    });
+
+    if (!senderAccount) {
+      return res.status(403).json({
+        message: "You are not authorized to transfer from this account",
+      });
+    }
+
+    // Find the receiver account locally
+    const receiverAccount = await Account.findOne({
+      accountNumber: to,
+    });
+
+    if (!receiverAccount) {
+      return res.status(404).json({
+        message: "Receiver account not found",
+      });
+    }
+
+    // Perform the actual transfer through NIBSS
+    const result = await nibssService.transfer(
+      token,
+      from,
+      to,
+      amount
+    );
+
+    // Save the successful transfer locally
+    const transaction = await Transaction.create({
+      senderAccount: senderAccount._id,
+      receiverAccount: receiverAccount._id,
+      amount: amount,
+      type: "transfer",
+      status: "successful",
+      reference: result.reference || result.transactionId,
+      description: `Transfer from ${from} to ${to}`,
+    });
 
     res.status(200).json({
       message: "Transfer successful",
-      data: result,
+      data: {
+        nibss: result,
+        transaction: transaction,
+      },
     });
   } catch (error) {
     console.error(
       "NIBSS transfer error:",
-      error.response?.data || error.message,
+      error.response?.data || error.message
     );
 
     res.status(error.response?.status || 500).json({
@@ -344,6 +319,35 @@ exports.transfer = async (req, res) => {
     });
   }
 };
+
+// exports.transfer = async (req, res) => {
+//   try {
+//     const { token, from, to, amount } = req.body;
+
+//     if (!token || !from || !to || !amount) {
+//       return res.status(400).json({
+//         message: "token, from, to and amount are required",
+//       });
+//     }
+
+//     const result = await nibssService.transfer(token, from, to, amount);
+
+//     res.status(200).json({
+//       message: "Transfer successful",
+//       data: result,
+//     });
+//   } catch (error) {
+//     console.error(
+//       "NIBSS transfer error:",
+//       error.response?.data || error.message,
+//     );
+
+//     res.status(error.response?.status || 500).json({
+//       message: "Failed to transfer funds",
+//       error: error.response?.data || error.message,
+//     });
+//   }
+// };
 
 // Insert BVN
 
