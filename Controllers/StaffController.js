@@ -338,7 +338,6 @@ exports.getTransactionById = async (req, res) => {
     });
   }
 };
-
 exports.updateStaffStatus = async (req, res) => {
   try {
     const { staffId } = req.params;
@@ -358,10 +357,27 @@ exports.updateStaffStatus = async (req, res) => {
       });
     }
 
-    // Prevent an admin from deactivating their own account
+    // Nobody can deactivate or activate their own account
     if (staff._id.toString() === req.staff._id.toString()) {
       return res.status(400).json({
-        message: "You cannot deactivate your own account",
+        message: "You cannot change your own account status",
+      });
+    }
+
+    // The super admin cannot be deactivated by an admin
+    if (staff.role === "super_admin") {
+      return res.status(403).json({
+        message: "The super admin account cannot be deactivated",
+      });
+    }
+
+    // An ordinary admin cannot change another admin's status
+    if (
+      staff.role === "admin" &&
+      req.staff.role !== "super_admin"
+    ) {
+      return res.status(403).json({
+        message: "Only the super admin can change an admin's status",
       });
     }
 
@@ -392,6 +408,60 @@ exports.updateStaffStatus = async (req, res) => {
     });
   }
 };
+
+// exports.updateStaffStatus = async (req, res) => {
+//   try {
+//     const { staffId } = req.params;
+//     const { isActive } = req.body;
+
+//     if (typeof isActive !== "boolean") {
+//       return res.status(400).json({
+//         message: "isActive must be true or false",
+//       });
+//     }
+
+//     const staff = await Staff.findById(staffId);
+
+//     if (!staff) {
+//       return res.status(404).json({
+//         message: "Staff not found",
+//       });
+//     }
+
+//     // Prevent an admin from deactivating their own account
+//     if (staff._id.toString() === req.staff._id.toString()) {
+//       return res.status(400).json({
+//         message: "You cannot deactivate your own account",
+//       });
+//     }
+
+//     staff.isActive = isActive;
+
+//     await staff.save();
+
+//     res.status(200).json({
+//       message: `Staff account ${
+//         isActive ? "activated" : "deactivated"
+//       } successfully`,
+//       data: {
+//         id: staff._id,
+//         firstName: staff.firstName,
+//         lastName: staff.lastName,
+//         email: staff.email,
+//         role: staff.role,
+//         department: staff.department,
+//         isActive: staff.isActive,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Update staff status error:", error);
+
+//     res.status(500).json({
+//       message: "Failed to update staff status",
+//       error: error.message,
+//     });
+//   }
+// };
 
 // exports.updateStaffStatus = async (req, res) => {
 //   try {
@@ -485,7 +555,6 @@ exports.getStaffById = async (req, res) => {
   }
 };
 
-//
 exports.updateStaff = async (req, res) => {
   try {
     const { staffId } = req.params;
@@ -496,6 +565,33 @@ exports.updateStaff = async (req, res) => {
     if (!staff) {
       return res.status(404).json({
         message: "Staff not found",
+      });
+    }
+
+    // Nobody can edit their own staff record through this route
+    if (staff._id.toString() === req.staff._id.toString()) {
+      return res.status(400).json({
+        message: "You cannot update your own staff account",
+      });
+    }
+
+    // The super admin cannot be edited by an ordinary admin
+    if (
+      staff.role === "super_admin" &&
+      req.staff.role !== "super_admin"
+    ) {
+      return res.status(403).json({
+        message: "Only the super admin can update the super admin account",
+      });
+    }
+
+    // An ordinary admin cannot edit another admin
+    if (
+      staff.role === "admin" &&
+      req.staff.role !== "super_admin"
+    ) {
+      return res.status(403).json({
+        message: "Only the super admin can update an admin",
       });
     }
 
@@ -539,7 +635,62 @@ exports.updateStaff = async (req, res) => {
     });
   }
 };
+//
+// exports.updateStaff = async (req, res) => {
+//   try {
+//     const { staffId } = req.params;
+//     const { firstName, lastName, phone, department } = req.body;
 
+//     const staff = await Staff.findById(staffId);
+
+//     if (!staff) {
+//       return res.status(404).json({
+//         message: "Staff not found",
+//       });
+//     }
+
+//     if (firstName !== undefined) {
+//       staff.firstName = firstName;
+//     }
+
+//     if (lastName !== undefined) {
+//       staff.lastName = lastName;
+//     }
+
+//     if (phone !== undefined) {
+//       staff.phone = phone;
+//     }
+
+//     if (department !== undefined) {
+//       staff.department = department;
+//     }
+
+//     await staff.save();
+
+//     res.status(200).json({
+//       message: "Staff updated successfully",
+//       data: {
+//         id: staff._id,
+//         firstName: staff.firstName,
+//         lastName: staff.lastName,
+//         email: staff.email,
+//         phone: staff.phone,
+//         role: staff.role,
+//         department: staff.department,
+//         isActive: staff.isActive,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Update staff error:", error);
+
+//     res.status(500).json({
+//       message: "Failed to update staff",
+//       error: error.message,
+//     });
+//   }
+// };
+
+//update staff role
 exports.updateStaffRole = async (req, res) => {
   try {
     const { staffId } = req.params;
@@ -559,10 +710,31 @@ exports.updateStaffRole = async (req, res) => {
       });
     }
 
-    // Prevent an admin from changing their own role
+    // Nobody can change their own role
     if (staff._id.toString() === req.staff._id.toString()) {
       return res.status(400).json({
         message: "You cannot change your own role",
+      });
+    }
+
+    // Only the super admin can create or remove admins
+    if (role === "admin" && req.staff.role !== "super_admin") {
+      return res.status(403).json({
+        message: "Only the super admin can assign the admin role",
+      });
+    }
+
+    // Only the super admin can demote an admin
+    if (staff.role === "admin" && req.staff.role !== "super_admin") {
+      return res.status(403).json({
+        message: "Only the super admin can change an admin's role",
+      });
+    }
+
+    // Nobody can change the super admin's role
+    if (staff.role === "super_admin") {
+      return res.status(403).json({
+        message: "The super admin role cannot be changed",
       });
     }
 
@@ -592,6 +764,58 @@ exports.updateStaffRole = async (req, res) => {
   }
 };
 
+// exports.updateStaffRole = async (req, res) => {
+//   try {
+//     const { staffId } = req.params;
+//     const { role } = req.body;
+
+//     if (!["staff", "admin"].includes(role)) {
+//       return res.status(400).json({
+//         message: "role must be staff or admin",
+//       });
+//     }
+
+//     const staff = await Staff.findById(staffId);
+
+//     if (!staff) {
+//       return res.status(404).json({
+//         message: "Staff not found",
+//       });
+//     }
+
+//     // Prevent an admin from changing their own role
+//     if (staff._id.toString() === req.staff._id.toString()) {
+//       return res.status(400).json({
+//         message: "You cannot change your own role",
+//       });
+//     }
+
+//     staff.role = role;
+
+//     await staff.save();
+
+//     res.status(200).json({
+//       message: "Staff role updated successfully",
+//       data: {
+//         id: staff._id,
+//         firstName: staff.firstName,
+//         lastName: staff.lastName,
+//         email: staff.email,
+//         role: staff.role,
+//         department: staff.department,
+//         isActive: staff.isActive,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Update staff role error:", error);
+
+//     res.status(500).json({
+//       message: "Failed to update staff role",
+//       error: error.message,
+//     });
+//   }
+// };
+
 exports.deleteStaff = async (req, res) => {
   try {
     const { staffId } = req.params;
@@ -604,10 +828,27 @@ exports.deleteStaff = async (req, res) => {
       });
     }
 
-    // Prevent an admin from deleting their own account
+    // Nobody can delete their own account
     if (staff._id.toString() === req.staff._id.toString()) {
       return res.status(400).json({
         message: "You cannot delete your own account",
+      });
+    }
+
+    // The super admin cannot be deleted
+    if (staff.role === "super_admin") {
+      return res.status(403).json({
+        message: "The super admin cannot be deleted",
+      });
+    }
+
+    // An ordinary admin cannot delete another admin
+    if (
+      staff.role === "admin" &&
+      req.staff.role !== "super_admin"
+    ) {
+      return res.status(403).json({
+        message: "Only the super admin can delete an admin",
       });
     }
 
@@ -621,6 +862,112 @@ exports.deleteStaff = async (req, res) => {
 
     res.status(500).json({
       message: "Failed to delete staff",
+      error: error.message,
+    });
+  }
+};
+
+
+// //before delete staff
+// exports.deleteStaff = async (req, res) => {
+//   try {
+//     const { staffId } = req.params;
+
+//     const staff = await Staff.findById(staffId);
+
+//     if (!staff) {
+//       return res.status(404).json({
+//         message: "Staff not found",
+//       });
+//     }
+
+//     // Prevent an admin from deleting their own account
+//     if (staff._id.toString() === req.staff._id.toString()) {
+//       return res.status(400).json({
+//         message: "You cannot delete your own account",
+//       });
+//     }
+
+//     await Staff.findByIdAndDelete(staffId);
+
+//     res.status(200).json({
+//       message: "Staff deleted successfully",
+//     });
+//   } catch (error) {
+//     console.error("Delete staff error:", error);
+
+//     res.status(500).json({
+//       message: "Failed to delete staff",
+//       error: error.message,
+//     });
+//   }
+// };
+
+exports.createAdmin = async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      password,
+      department,
+    } = req.body;
+
+    if (
+      !firstName ||
+      !lastName ||
+      !email ||
+      !phone ||
+      !password
+    ) {
+      return res.status(400).json({
+        message:
+          "firstName, lastName, email, phone and password are required",
+      });
+    }
+
+    const existingStaff = await Staff.findOne({
+      $or: [{ email }, { phone }],
+    });
+
+    if (existingStaff) {
+      return res.status(400).json({
+        message: "Staff with this email or phone already exists",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const admin = await Staff.create({
+      firstName,
+      lastName,
+      email,
+      phone,
+      password: hashedPassword,
+      role: "admin",
+      department: department || "management",
+      isActive: true,
+    });
+
+    res.status(201).json({
+      message: "Admin created successfully",
+      data: {
+        id: admin._id,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        email: admin.email,
+        phone: admin.phone,
+        role: admin.role,
+        department: admin.department,
+        isActive: admin.isActive,
+      },
+    });
+  } catch (error) {
+    console.error("Create admin error:", error);
+
+    res.status(500).json({
+      message: "Failed to create admin",
       error: error.message,
     });
   }

@@ -1,379 +1,296 @@
 Digital Bank Backend
 
-A Node.js/Express backend for a digital banking application. The project provides customer authentication, bank-account creation, BVN/NIN validation, account name enquiry, fund transfers, balances, transaction history, and staff/admin operations.
+Node.js/Express digital banking backend with customer authentication, banking operations, NIBSS integration, and role-based staff administration.
 
 Live API
 
-Production Base URL
-
 https://digital-bank-kvhc.onrender.com
 
-The API is deployed on Render.
+Role Hierarchy
 
-Tech Stack
+SUPER ADMIN
+     ↓
+   ADMIN
+     ↓
+   STAFF
 
-Node.js
+Super Admin
 
-Express.js
+There is no public super-admin registration endpoint.
 
-MongoDB
+The first super admin is created once during secure setup:
 
-Mongoose
+node Scripts/createSuperAdmin.js
 
-JWT authentication
+The script reads these values from .env:
 
-bcrypt / bcryptjs for password hashing
+SUPER_ADMIN_EMAIL=your_super_admin_email
+SUPER_ADMIN_PASSWORD=your_super_admin_password
+SUPER_ADMIN_PHONE=your_super_admin_phone
 
-Axios for external API communication
+It hashes the password with bcrypt and creates a Staff record with:
 
-CORS
+role: super_admin
+department: management
+isActive: true
 
-NIBSS by Phoenix simulated banking API
+Staff Login
 
-Render for deployment
+All three staff roles use the same endpoint:
 
-Project Structure
+POST /staff/login
 
-digital-bank/
-│
-├── Config/
-│   └── databaseConfig.js
-│
-├── Controllers/
-│   ├── customerController.js
-│   ├── NibssController.js
-│   └── staffController.js
-│
-├── Middleware/
-│   ├── customerAuth.js
-│   └── staffAuth.js
-│
-├── Models/
-│   ├── Account.js
-│   ├── Customer.js
-│   ├── Staff.js
-│   └── Transactions.js
-│
-├── Routes/
-│   ├── customerRoute.js
-│   ├── nibssRoute.js
-│   └── staffRoute.js
-│
-├── Services/
-│   └── nibssService.js
-│
-├── .gitignore
-├── app.js
-├── package.json
-└── package-lock.json
-
-Installation
-
-Clone the repository:
-
-git clone https://github.com/Blaqmandakage/digital-bank.git
-
-Move into the project:
-
-cd digital-bank
-
-Install dependencies:
-
-npm install
-
-Environment Variables
-
-Create a .env file in the project root.
-
-Example:
-
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-
-Never commit .env to GitHub.
-
-The .gitignore file should contain:
-
-.env
-node_modules
-
-Running Locally
-
-Start the server:
-
-node app.js
-
-For development with nodemon:
-
-npx nodemon app.js
-
-The API will run on the configured port.
-
-Example:
-
-Server is running on port 5000
-MongoDB connected
-
-Authentication
-
-Customer authentication uses JWT.
-
-A customer first registers:
-
-POST /customers/register
-
-Then logs in:
-
-POST /customers/login
-
-A successful login returns a JWT.
-
-Protected customer endpoints require:
-
-Authorization: Bearer YOUR_JWT_TOKEN
-
-The frontend should store the customer's JWT and automatically attach it to protected requests.
-
-Authentication Flow
-
-Register
-   ↓
-Login
-   ↓
-Receive JWT
-   ↓
-Store JWT
-   ↓
-Send JWT with protected requests
-   ↓
-Backend verifies JWT
-   ↓
-Request is allowed or rejected
-
-Customer API
-
-Register
-
-POST /customers/register
-
-Request body:
+Request:
 
 {
-  "firstName": "John",
-  "lastName": "Doe",
-  "email": "john@example.com",
-  "phone": "09012345678",
-  "password": "your-password",
-  "dob": "1995-05-20"
-}
-
-Login
-
-POST /customers/login
-
-Request body:
-
-{
-  "email": "john@example.com",
+  "email": "staff@example.com",
   "password": "your-password"
 }
 
-Profile
+The response contains a JWT and the staff role.
 
-GET /customers/profile
+How the Frontend Shows Different Dashboards
 
-Authentication required.
+A separate login endpoint is not necessary.
 
-Transactions
+The frontend logs in through /staff/login, then reads:
 
-GET /customers/transactions
+data.staff.role
 
-Authentication required.
+Routing:
 
-Returns transactions where the customer's accounts are either the sender or receiver.
+staff
+  ↓
+Staff Dashboard
 
-Bank API
+admin
+  ↓
+Admin Dashboard
 
-Create Account
+super_admin
+  ↓
+Super Admin Dashboard
 
-POST /bank/account
+So the same login page/portal can serve all three roles while displaying a completely different dashboard after authentication.
 
-Authentication required.
-
-Get My Accounts
-
-GET /bank/my-accounts
-
-Authentication required.
-
-Name Enquiry
-
-POST /bank/name-enquiry
-
-Checks the account name associated with an account number.
-
-Validate BVN
-
-POST /bank/validate-bvn
-
-Authentication required.
-
-Validate NIN
-
-POST /bank/validate-nin
-
-Authentication required.
-
-Transfer Funds
-
-POST /bank/transfer
-
-Authentication required.
-
-The backend verifies that the sender account belongs to the authenticated customer before performing the transfer.
-
-Transfer Status
-
-POST /bank/transfer-status
-
-Retrieves the status of a NIBSS transaction.
-
-Account Balance
-
-POST /bank/account-balance
-
-Authentication required.
-
-The backend verifies that the account belongs to the authenticated customer before retrieving its balance.
-
-Staff API
-
-Staff authentication is separate from customer authentication.
+The frontend controls navigation. The backend remains the real security boundary and rejects unauthorized requests.
 
 Staff Registration
 
 POST /staff/register
 
-New staff accounts receive the staff role by default.
+Protected. Admin or super_admin can create normal staff.
 
-Staff Login
+This endpoint always creates:
 
-POST /staff/login
+role: staff
 
-Get Customers
+It cannot be used to create an admin or super_admin.
 
-GET /staff/customers
+Create Admin
 
-Staff/Admin authentication required.
+POST /staff/admins
 
-Get Customer Accounts
+Super-admin only.
 
-GET /staff/customers/:customerId/accounts
+The controller always creates:
 
-Staff/Admin authentication required.
+role: admin
 
-Get Customer Transactions
+The client cannot request super_admin through this endpoint.
 
-GET /staff/customers/:customerId/transactions
-
-Staff/Admin authentication required.
-
-Get Customer Account Balance
-
-POST /staff/customers/:customerId/accounts/:accountNumber/balance
-
-Staff/Admin authentication required.
-
-Get Transaction
-
-GET /staff/transactions/:transactionId
-
-Staff/Admin authentication required.
-
-Get All Staff
-
-GET /staff/
-
-Staff/Admin authentication required.
-
-Get Staff By ID
-
-GET /staff/:staffId
-
-Staff/Admin authentication required.
-
-Admin-Only Operations
-
-The following operations require the admin role:
-
-PATCH /staff/:staffId
-
-PATCH /staff/:staffId/status
+Role Management
 
 PATCH /staff/:staffId/role
 
+Only the super admin can actually promote staff to admin or demote admin to staff.
+
+Allowed:
+
+staff → admin
+admin → staff
+
+Blocked:
+
+staff → super_admin
+admin → super_admin
+super_admin → anything
+
+Staff Status
+
+PATCH /staff/:staffId/status
+
+Admins can manage ordinary staff.
+
+The super admin can manage staff and admins.
+
+The super admin cannot be deactivated.
+
+A user cannot change their own account status.
+
+Staff Update
+
+PATCH /staff/:staffId
+
+Admins can update ordinary staff.
+
+The super admin can update staff and admins.
+
+The super admin is protected from ordinary-admin modification.
+
+Delete Staff
+
 DELETE /staff/:staffId
 
-An administrator cannot deactivate, change the role of, or delete their own account.
+Admins can delete ordinary staff.
 
-NIBSS Integration
+The super admin can delete ordinary staff and admins.
 
-The backend integrates with the NIBSS by Phoenix simulated API.
+The super admin cannot be deleted.
 
-The NIBSS service is responsible for communication with the external banking API.
+A user cannot delete their own account.
 
-The main integration operations include:
+Staff Operational Endpoints
 
-Fintech onboarding
+GET /staff/customers
+GET /staff/customers/:customerId/accounts
+GET /staff/customers/:customerId/transactions
+POST /staff/customers/:customerId/accounts/:accountNumber/balance
+GET /staff/transactions/:transactionId
 
-NIBSS authentication/token generation
+Available to staff, admin, and super_admin.
 
-Bank account creation
+GET /staff/
+GET /staff/:staffId
 
-Account name enquiry
+Available to admin and super_admin.
 
-BVN validation
+Customer API
 
-NIN validation
+POST /customers/register
+POST /customers/login
+GET /customers/profile
+GET /customers/transactions
 
-Fund transfer
+Protected customer endpoints require the customer JWT.
 
-Transaction status enquiry
+Bank API
 
-Account balance enquiry
+GET /bank/my-accounts
+POST /bank/account
+POST /bank/name-enquiry
+POST /bank/validate-bvn
+POST /bank/validate-nin
+POST /bank/transfer
+POST /bank/transfer-status
+POST /bank/account-balance
 
-BVN/NIN test-data insertion
-
-The NIBSS integration is handled by the backend service layer.
+Customer-protected routes require the customer JWT.
 
 Typical Customer Flow
 
-Customer Registration
-        ↓
-Customer Login
-        ↓
+Register
+   ↓
+Login
+   ↓
 Customer JWT
-        ↓
-BVN/NIN Validation
-        ↓
-Bank Account Creation
-        ↓
+   ↓
+Validate BVN/NIN
+   ↓
+Create Account
+   ↓
 My Accounts
-        ↓
+   ↓
 Name Enquiry
-        ↓
-Fund Transfer
-        ↓
+   ↓
+Transfer
+   ↓
 Transaction Status
-        ↓
-Account Balance
-        ↓
+   ↓
+Balance
+   ↓
 Transaction History
 
-Error Handling
+Typical Staff Flow
 
-The API uses standard HTTP status codes:
+Staff Login
+   ↓
+role = staff
+   ↓
+Staff Dashboard
+   ↓
+Customers / Accounts / Transactions / Balances
+
+Typical Admin Flow
+
+Staff Login
+   ↓
+role = admin
+   ↓
+Admin Dashboard
+   ↓
+Staff Management
+
+Typical Super Admin Flow
+
+Staff Login
+   ↓
+role = super_admin
+   ↓
+Super Admin Dashboard
+   ↓
+Manage Staff
+   ↓
+Create Admin
+   ↓
+Promote / Demote Admins
+   ↓
+Activate / Deactivate Admins
+   ↓
+Delete Admins
+
+NIBSS Integration
+
+The backend communicates with the NIBSS by Phoenix simulated API through the service layer.
+
+Operations include fintech onboarding, NIBSS authentication, account creation, name enquiry, BVN validation, NIN validation, transfers, transaction status, account balance, and BVN/NIN identity test-data insertion.
+
+BVN/NIN insertion is identity-store/test-data setup. Customer verification validates existing records.
+
+Security
+
+Passwords are hashed before storage.
+
+Customer and staff authentication use JWTs.
+
+Staff roles are enforced by backend middleware/controllers.
+
+Super-admin credentials are supplied through environment variables during setup.
+
+.env must never be committed to GitHub.
+
+Never expose passwords, JWT secrets, database credentials, NIBSS credentials, or access tokens.
+
+Frontend dashboard routing is not a security control; backend authorization is authoritative.
+
+Project Structure
+
+digital-bank/
+├── Config/
+├── Controllers/
+├── Middleware/
+├── Models/
+├── Routes/
+├── Services/
+├── Scripts/
+│   └── createSuperAdmin.js
+├── .gitignore
+├── .env
+├── app.js
+├── package.json
+└── package-lock.json
+
+Status Codes
 
 Status
 
@@ -411,90 +328,14 @@ Resource conflict
 
 Internal server error
 
-Security Notes
-
-Passwords are hashed before being stored.
-
-JWT authentication protects customer and staff routes.
-
-Staff roles control admin-only operations.
-
-Customers can only access their own accounts and account balances.
-
-Customers can only initiate transfers from their own accounts.
-
-.env must not be committed to GitHub.
-
-Database credentials, JWT secrets, NIBSS credentials, and tokens should never be exposed publicly.
-
-Frontend Integration
-
-The frontend communicates with the backend using the production base URL:
-
-https://digital-bank-kvhc.onrender.com
-
-For customer-protected endpoints, the frontend sends:
-
-Authorization: Bearer CUSTOMER_JWT
-
-The frontend should not manually copy and paste JWT tokens for every request. After login, the frontend can store the returned JWT and automatically attach it to protected API requests.
-
-API Documentation
-
-For the complete frontend-facing endpoint documentation, refer to the project's Digital Bank API Documentation.
-
 Deployment
-
-The backend is deployed on Render.
 
 Production URL:
 
 https://digital-bank-kvhc.onrender.com
 
-When deploying, configure the required environment variables in the hosting platform rather than committing .env to the repository.
-
-Project Status
-
-The backend currently includes:
-
-Customer registration and login
-
-JWT authentication
-
-Customer profiles
-
-Customer transaction history
-
-Bank account creation
-
-Customer account retrieval
-
-Account name enquiry
-
-BVN validation
-
-NIN validation
-
-Fund transfers
-
-Transaction status checking
-
-Account balance checking
-
-Staff authentication
-
-Staff/customer management
-
-Admin role management
-
-NIBSS API integration
-
-MongoDB persistence
-
-Production deployment
+Configure environment variables on Render instead of committing .env.
 
 Author
 
 Blaqmandakage
-
-Backend development project focused on learning and implementing real-world API integration, authentication, authorization, database operations, and banking workflows.
