@@ -1,11 +1,10 @@
-const Staff = require("../models/Staff");
+const Staff = require("../Models/Staff");
 const bcrypt = require("bcrypt");
-const Customer = require("../models/Customer");
-const Account = require("../models/Account");
-const Transaction = require("../models/Transactions");
+const Customer = require("../Models/Customer");
+const Account = require("../Models/Account");
+const Transaction = require("../Models/Transactions");
 const nibssService = require("../Services/nibssService");
 const jwt = require("jsonwebtoken");
-
 
 exports.registerStaff = async (req, res) => {
   try {
@@ -63,8 +62,6 @@ exports.registerStaff = async (req, res) => {
   }
 };
 
-
-
 // exports.registerStaff = async (req, res) => {
 //   try {
 //     const { firstName, lastName, email, phone, password, role, department } =
@@ -121,7 +118,6 @@ exports.registerStaff = async (req, res) => {
 //   }
 // };
 
-
 exports.loginStaff = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -146,10 +142,7 @@ exports.loginStaff = async (req, res) => {
       });
     }
 
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      staff.password
-    );
+    const isPasswordValid = await bcrypt.compare(password, staff.password);
 
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -165,7 +158,7 @@ exports.loginStaff = async (req, res) => {
       process.env.JWT_SECRET,
       {
         expiresIn: "1d",
-      }
+      },
     );
 
     res.status(200).json({
@@ -193,12 +186,9 @@ exports.loginStaff = async (req, res) => {
   }
 };
 
-
 exports.getCustomers = async (req, res) => {
   try {
-    const customers = await Customer.find().select(
-      "-password"
-    );
+    const customers = await Customer.find().select("-password");
 
     res.status(200).json({
       message: "Customers retrieved successfully",
@@ -237,7 +227,6 @@ exports.getCustomerAccounts = async (req, res) => {
     });
   }
 };
-
 
 exports.getCustomerTransactions = async (req, res) => {
   try {
@@ -303,10 +292,7 @@ exports.getCustomerAccountBalance = async (req, res) => {
       });
     }
 
-    const result = await nibssService.getAccountBalance(
-      token,
-      accountNumber
-    );
+    const result = await nibssService.getAccountBalance(token, accountNumber);
 
     res.status(200).json({
       message: "Customer account balance retrieved successfully",
@@ -315,7 +301,7 @@ exports.getCustomerAccountBalance = async (req, res) => {
   } catch (error) {
     console.error(
       "Get customer account balance error:",
-      error.response?.data || error.message
+      error.response?.data || error.message,
     );
 
     res.status(error.response?.status || 500).json({
@@ -407,7 +393,6 @@ exports.updateStaffStatus = async (req, res) => {
   }
 };
 
-
 // exports.updateStaffStatus = async (req, res) => {
 //   try {
 //     const { staffId } = req.params;
@@ -455,7 +440,6 @@ exports.updateStaffStatus = async (req, res) => {
 //   }
 // };
 
-
 exports.getStaff = async (req, res) => {
   try {
     const staff = await Staff.find().select("-password");
@@ -474,7 +458,6 @@ exports.getStaff = async (req, res) => {
     });
   }
 };
-
 
 exports.getStaffById = async (req, res) => {
   try {
@@ -501,8 +484,6 @@ exports.getStaffById = async (req, res) => {
     });
   }
 };
-
-
 
 //
 exports.updateStaff = async (req, res) => {
@@ -610,7 +591,6 @@ exports.updateStaffRole = async (req, res) => {
     });
   }
 };
-
 
 exports.deleteStaff = async (req, res) => {
   try {

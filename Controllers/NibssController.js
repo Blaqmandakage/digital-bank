@@ -1,6 +1,6 @@
 const nibssService = require("../Services/nibssService");
-const Account = require("../models/Account");
-const Transaction = require("../models/Transactions");
+const Account = require("../Models/Account");
+const Transaction = require("../Models/Transactions");
 
 // Onboard fintech controller function to be called from the route
 
@@ -119,8 +119,6 @@ exports.createAccount = async (req, res) => {
   }
 };
 
-
-
 // Get logged-in customer's accounts
 exports.getMyAccounts = async (req, res) => {
   try {
@@ -208,7 +206,6 @@ exports.validateBvn = async (req, res) => {
   }
 };
 
-
 // Account name enquiry
 
 exports.nameEnquiry = async (req, res) => {
@@ -282,12 +279,7 @@ exports.transfer = async (req, res) => {
     }
 
     // Perform the actual transfer through NIBSS
-    const result = await nibssService.transfer(
-      token,
-      from,
-      to,
-      amount
-    );
+    const result = await nibssService.transfer(token, from, to, amount);
 
     // Save the successful transfer locally
     const transaction = await Transaction.create({
@@ -310,7 +302,7 @@ exports.transfer = async (req, res) => {
   } catch (error) {
     console.error(
       "NIBSS transfer error:",
-      error.response?.data || error.message
+      error.response?.data || error.message,
     );
 
     res.status(error.response?.status || 500).json({

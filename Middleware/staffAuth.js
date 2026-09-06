@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const Staff = require("../models/Staff");
+const Staff = require("../Models/Staff");
 
 exports.authorizeRoles = (...roles) => {
   return (req, res, next) => {
