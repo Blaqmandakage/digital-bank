@@ -4,7 +4,7 @@ const express = require("express");
 const router = express.Router();
 
 const NibssController = require("../Controllers/NibssController");
-const { protect } = require("../Middleware/authMiddleware");
+const { protect } = require("../Middleware/customerAuth");
 
 
 // ======================================================

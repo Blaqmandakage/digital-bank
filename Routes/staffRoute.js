@@ -6,8 +6,7 @@ const staffController = require("../Controllers/StaffController");
 const {
     protectStaff,
     authorizeRoles
-} = require("../Middleware/staffAuthMiddleware");
-
+} = require("../Middleware/staffAuth");
 
 // ======================================================
 // STAFF AUTHENTICATION
