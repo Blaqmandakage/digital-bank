@@ -52,7 +52,7 @@ router.get(
 router.get(
   "/customers/:customerId/transactions",
   protectStaff,
-  authorizeRoles("staff", "admin"),
+  authorizeRoles("staff", "admin", "super_admin"),
   staffController.getCustomerTransactions,
 );
 // get all transactions for a specific account of a specific customer
