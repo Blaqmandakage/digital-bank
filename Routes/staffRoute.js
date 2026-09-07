@@ -8,7 +8,7 @@ router.post(
   "/register",
   protectStaff,
   authorizeRoles("admin", "super_admin"),
-  staffController.registerStaff
+  staffController.registerStaff,
 );
 
 // router.post("/register", staffController.registerStaff);
@@ -38,14 +38,14 @@ router.post(
 router.get(
   "/customers",
   protectStaff,
-  authorizeRoles("staff", "admin"),
+  authorizeRoles("staff", "admin", "super_admin"),
   staffController.getCustomers,
 );
 //get all accounts for a specific customer
 router.get(
   "/customers/:customerId/accounts",
   protectStaff,
-  authorizeRoles("staff", "admin"),
+  authorizeRoles("staff", "admin", "super_admin"),
   staffController.getCustomerAccounts,
 );
 // get all transactions for a specific customer
@@ -66,7 +66,7 @@ router.post(
 router.get(
   "/transactions/:transactionId",
   protectStaff,
-  authorizeRoles("staff", "admin"),
+  authorizeRoles("staff", "admin", "super_admin"),
   staffController.getTransactionById,
 );
 
@@ -74,42 +74,22 @@ router.patch(
   "/:staffId/status",
   protectStaff,
   authorizeRoles("admin", "super_admin"),
-  staffController.updateStaffStatus
+  staffController.updateStaffStatus,
 );
 
-// router.patch(
-//   "/:staffId/status",
-//   protectStaff,
-//   authorizeRoles("admin"),
-//   staffController.updateStaffStatus,
-// );
 router.get(
   "/",
   protectStaff,
   authorizeRoles("admin", "super_admin"),
-  staffController.getStaff
+  staffController.getStaff,
 );
-// router.get(
-//   "/",
-//   protectStaff,
-//   authorizeRoles("staff", "admin"),
-//   staffController.getStaff,
-// );
-
 
 router.get(
   "/:staffId",
   protectStaff,
   authorizeRoles("admin", "super_admin"),
-  staffController.getStaffById
+  staffController.getStaffById,
 );
-
-// router.get(
-//   "/:staffId",
-//   protectStaff,
-//   authorizeRoles("staff", "admin"),
-//   staffController.getStaffById,
-// );
 
 router.patch(
   "/:staffId",
@@ -118,12 +98,6 @@ router.patch(
   staffController.updateStaff,
 );
 
-// router.patch(
-//   "/:staffId/role",
-//   protectStaff,
-//   authorizeRoles("admin"),
-//   staffController.updateStaffRole
-// );
 router.patch(
   "/:staffId/role",
   protectStaff,
@@ -135,14 +109,7 @@ router.delete(
   "/:staffId",
   protectStaff,
   authorizeRoles("admin", "super_admin"),
-  staffController.deleteStaff
+  staffController.deleteStaff,
 );
-
-// router.delete(
-//   "/:staffId",
-//   protectStaff,
-//   authorizeRoles("admin"),
-//   staffController.deleteStaff,
-// );
 
 module.exports = router;
