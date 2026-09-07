@@ -587,7 +587,7 @@
 
 const nibssService = require("../Services/nibssService");
 const Account = require("../Models/Account");
-const Transaction = require("../Models/Transaction");
+const Transaction = require("../Models/Transactions");
 
 
 // ======================================================
