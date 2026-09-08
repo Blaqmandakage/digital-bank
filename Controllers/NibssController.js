@@ -324,12 +324,19 @@ exports.insertBvn = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Insert BVN error:", error.response?.data || error.message);
+    console.error(
+        "Insert BVN error:",
+        error.response?.data || error.message
+    );
 
-    return res.status(500).json({
-      message: "Failed to register BVN",
+    return res.status(
+        error.response?.status || 500
+    ).json({
+        message:
+            error.response?.data?.message ||
+            "Failed to register BVN",
     });
-  }
+}
 };
 
 // ======================================================
