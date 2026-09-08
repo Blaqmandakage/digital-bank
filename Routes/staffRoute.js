@@ -190,5 +190,25 @@ router.delete(
     staffController.deleteStaff
 );
 
+// ======================================================
+// SUPER ADMIN CUSTOMER MANAGEMENT
+// ======================================================
+
+// Activate / deactivate customer
+router.patch(
+    "/customers/:customerId/status",
+    protectStaff,
+    authorizeRoles("super_admin"),
+    staffController.updateCustomerStatus
+);
+
+// Delete customer
+router.delete(
+    "/customers/:customerId",
+    protectStaff,
+    authorizeRoles("super_admin"),
+    staffController.deleteCustomer
+);
+
 
 module.exports = router;

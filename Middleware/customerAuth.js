@@ -22,6 +22,11 @@ exports.protect = async (req, res, next) => {
         message: "Customer not found",
       });
     }
+    if (!customer.isActive) {
+    return res.status(403).json({
+        message: "Customer account is inactive"
+    });
+}
 
     req.customer = customer;
 

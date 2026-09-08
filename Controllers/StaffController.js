@@ -727,3 +727,95 @@ exports.createAdmin = async (req, res) => {
     });
   }
 };
+
+
+
+
+// ======================================================
+// ACTIVATE / DEACTIVATE CUSTOMER
+// SUPER ADMIN ONLY
+// ======================================================
+
+exports.updateCustomerStatus = async (req, res) => {
+    try {
+        const { customerId } = req.params;
+        const { isActive } = req.body;
+
+        if (typeof isActive !== "boolean") {
+            return res.status(400).json({
+                message: "isActive must be true or false"
+            });
+        }
+
+        const customer = await Customer.findById(customerId);
+
+        if (!customer) {
+            return res.status(404).json({
+                message: "Customer not found"
+            });
+        }
+
+        customer.isActive = isActive;
+
+        await customer.save();
+
+        return res.status(200).json({
+            message: isActive
+                ? "Customer activated successfully"
+                : "Customer deactivated successfully",
+            data: {
+                id: customer._id,
+                firstName: customer.firstName,
+                lastName: customer.lastName,
+                email: customer.email,
+                isActive: customer.isActive
+            }
+        });
+
+    } catch (error) {
+        console.error("Update customer status error:", error);
+
+        return res.status(500).json({
+            message: "Failed to update customer status"
+        });
+    }
+};
+
+
+// ======================================================
+// DELETE CUSTOMER
+// SUPER ADMIN ONLY
+// ======================================================
+
+exports.deleteCustomer = async (req, res) => {
+    try {
+        const { customerId } = req.params;
+
+        const customer = await Customer.findById(customerId);
+
+        if (!customer) {
+            return res.status(404).json({
+                message: "Customer not found"
+            });
+        }
+
+        // Remove locally stored bank accounts belonging
+        // to this customer.
+        await Account.deleteMany({
+            customer: customerId
+        });
+
+        await Customer.findByIdAndDelete(customerId);
+
+        return res.status(200).json({
+            message: "Customer deleted successfully"
+        });
+
+    } catch (error) {
+        console.error("Delete customer error:", error);
+
+        return res.status(500).json({
+            message: "Failed to delete customer"
+        });
+    }
+};
