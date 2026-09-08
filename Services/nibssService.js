@@ -144,24 +144,46 @@ const authenticatedRequest = async (config) => {
 // CREATE ACCOUNT
 // ======================================================
 
+// exports.createAccount = async (
+//     kycType,
+//     kycID,
+//     dob
+// ) => {
+
+//     const response = await authenticatedRequest({
+
+//         method: "POST",
+
+//         url: "/api/account/create",
+
+//         data: {
+//             kycType,
+//             kycID,
+//             dob
+//         }
+
+//     });
+
+//     return response.data;
+// };
 exports.createAccount = async (
     kycType,
     kycID,
     dob
 ) => {
+    const formattedDob =
+        dob instanceof Date
+            ? dob.toISOString().split("T")[0]
+            : dob;
 
     const response = await authenticatedRequest({
-
         method: "POST",
-
         url: "/api/account/create",
-
         data: {
             kycType,
             kycID,
-            dob
+            dob: formattedDob
         }
-
     });
 
     return response.data;
