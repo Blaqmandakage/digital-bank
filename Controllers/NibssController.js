@@ -302,6 +302,7 @@ exports.insertBvn = async (req, res) => {
       customerDob,
       customerPhone,
     );
+    console.log("NIBSS INSERT BVN RESPONSE:", result);
 
     // Save BVN against authenticated customer
     req.customer.bvn = bvn;
