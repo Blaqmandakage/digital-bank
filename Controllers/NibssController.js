@@ -231,23 +231,29 @@ exports.getMyAccounts = async (req, res) => {
 // ======================================================
 
 exports.getAllAccounts = async (req, res) => {
-  try {
-    const result = await nibssService.getAllAccounts();
+    try {
+        const result = await nibssService.getAllAccounts();
 
-    return res.status(200).json({
-      message: "All accounts retrieved successfully",
-      data: result,
-    });
-  } catch (error) {
-    console.error(
-      "Get all accounts error:",
-      error.response?.data || error.message,
-    );
+        console.log(
+            "NIBSS ALL ACCOUNTS RESPONSE:",
+            JSON.stringify(result, null, 2)
+        );
 
-    return res.status(500).json({
-      message: "Failed to retrieve all accounts",
-    });
-  }
+        return res.status(200).json({
+            message: "All accounts retrieved successfully",
+            data: result,
+        });
+
+    } catch (error) {
+        console.error(
+            "Get all accounts error:",
+            error.response?.data || error.message
+        );
+
+        return res.status(500).json({
+            message: "Failed to retrieve all accounts",
+        });
+    }
 };
 
 // ======================================================
