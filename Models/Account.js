@@ -29,6 +29,11 @@ const accountSchema = new mongoose.Schema(
             default: null
         },
 
+        balance: {
+            type: Number,
+            default: 0
+        },
+
         kycType: {
             type: String,
             default: null
