@@ -1,87 +1,6 @@
-
-
 const nibssService = require("../Services/nibssService");
 const Account = require("../Models/Account");
 const Transaction = require("../Models/Transactions");
-
-
-// ======================================================
-// FINTECH ONBOARDING
-// ======================================================
-
-exports.onboardFintech = async (req, res) => {
-    try {
-        const { name, email } = req.body;
-
-        if (!name || !email) {
-            return res.status(400).json({
-                message: "Name and email are required"
-            });
-        }
-
-        const result = await nibssService.onboardFintech(
-            name,
-            email
-        );
-
-        return res.status(200).json({
-            message: "Fintech onboarded successfully",
-            data: result
-        });
-
-    } catch (error) {
-
-        console.error(
-            "Fintech onboarding error:",
-            error.response?.data || error.message
-        );
-
-        return res.status(500).json({
-            message: "Failed to onboard fintech"
-        });
-    }
-};
-
-
-// ======================================================
-// GET NIBSS TOKEN
-// BACKEND SETUP ONLY
-// ======================================================
-
-exports.getToken = async (req, res) => {
-    try {
-        const apiKey = process.env.NIBSS_API_KEY;
-        const apiSecret = process.env.NIBSS_API_SECRET;
-
-        if (!apiKey || !apiSecret) {
-            return res.status(500).json({
-                message: "NIBSS credentials are not configured"
-            });
-        }
-
-        const result = await nibssService.getToken(
-            apiKey,
-            apiSecret
-        );
-
-        return res.status(200).json({
-            message: "NIBSS token generated successfully",
-            data: result
-        });
-
-    } catch (error) {
-
-        console.error(
-            "NIBSS token error:",
-            error.response?.data || error.message
-        );
-
-        return res.status(500).json({
-            message: "Failed to generate NIBSS token"
-        });
-    }
-};
-
 
 // ======================================================
 // CREATE BANK ACCOUNT
@@ -89,8 +8,7 @@ exports.getToken = async (req, res) => {
 
 exports.createAccount = async (req, res) => {
     try {
-
-        // Customer cannot create another account
+        // Customer can only have one account
         const existingAccount = await Account.findOne({
             customer: req.customer._id
         });
@@ -102,19 +20,14 @@ exports.createAccount = async (req, res) => {
             });
         }
 
-        /*
-         * Use the customer's registered BVN.
-         *
-         * The customer should not have to type their BVN
-         * again after verification.
-         */
-
+        // Customer must have a registered BVN
         if (!req.customer.bvn) {
             return res.status(400).json({
                 message: "Please register your BVN first"
             });
         }
 
+        // Customer must have a verified BVN
         if (!req.customer.isVerified) {
             return res.status(400).json({
                 message: "Please verify your BVN first"
@@ -125,7 +38,12 @@ exports.createAccount = async (req, res) => {
         const kycID = req.customer.bvn;
         const dob = req.customer.dob;
 
-        // Backend automatically gets the NIBSS token
+        /*
+         * The frontend does NOT send a NIBSS token.
+         *
+         * nibssService handles NIBSS authentication
+         * internally using the backend credentials.
+         */
         const result = await nibssService.createAccount(
             kycType,
             kycID,
@@ -166,7 +84,7 @@ exports.createAccount = async (req, res) => {
             accountNumber: nibssAccount.accountNumber,
             accountName: nibssAccount.accountName,
             bankCode: nibssAccount.bankCode,
-            bankName: "Phoenix Bank",
+            bankName: nibssAccount.bankName,
             kycType: nibssAccount.kycType,
             kycID: nibssAccount.kycID
         });
@@ -177,7 +95,6 @@ exports.createAccount = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(
             "Create account error:",
             error.response?.data || error.message
@@ -189,14 +106,12 @@ exports.createAccount = async (req, res) => {
     }
 };
 
-
 // ======================================================
 // GET MY ACCOUNTS
 // ======================================================
 
 exports.getMyAccounts = async (req, res) => {
     try {
-
         const accounts = await Account.find({
             customer: req.customer._id
         });
@@ -208,7 +123,6 @@ exports.getMyAccounts = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(
             "Get my accounts error:",
             error.message
@@ -220,7 +134,6 @@ exports.getMyAccounts = async (req, res) => {
     }
 };
 
-
 // ======================================================
 // GET ALL ACCOUNTS
 // BACKEND / STAFF USE
@@ -228,7 +141,6 @@ exports.getMyAccounts = async (req, res) => {
 
 exports.getAllAccounts = async (req, res) => {
     try {
-
         const result =
             await nibssService.getAllAccounts();
 
@@ -238,7 +150,6 @@ exports.getAllAccounts = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(
             "Get all accounts error:",
             error.response?.data || error.message
@@ -250,21 +161,13 @@ exports.getAllAccounts = async (req, res) => {
     }
 };
 
-
 // ======================================================
 // INSERT BVN
 // ======================================================
 
 exports.insertBvn = async (req, res) => {
     try {
-
-        const {
-            bvn,
-            firstName,
-            lastName,
-            dob,
-            phone
-        } = req.body;
+        const { bvn } = req.body;
 
         if (!bvn) {
             return res.status(400).json({
@@ -275,13 +178,21 @@ exports.insertBvn = async (req, res) => {
         // Customer cannot register another BVN
         if (req.customer.bvn) {
             return res.status(409).json({
-                message: "Customer already has a BVN registered"
+                message:
+                    "Customer already has a BVN registered"
             });
         }
 
         /*
-         * We use the authenticated customer's information
-         * instead of trusting someone else's identity details.
+         * Identity information comes directly from
+         * the authenticated customer.
+         *
+         * The frontend does not send:
+         * - firstName
+         * - lastName
+         * - dob
+         * - phone
+         * - NIBSS token
          */
 
         const customerFirstName =
@@ -297,39 +208,9 @@ exports.insertBvn = async (req, res) => {
             req.customer.phone;
 
         /*
-         * These checks are kept for compatibility if the
-         * frontend sends the fields.
+         * The NIBSS token is handled internally
+         * by nibssService.
          */
-
-        if (
-            firstName &&
-            firstName.toLowerCase() !==
-            customerFirstName.toLowerCase()
-        ) {
-            return res.status(400).json({
-                message: "First name does not match customer record"
-            });
-        }
-
-        if (
-            lastName &&
-            lastName.toLowerCase() !==
-            customerLastName.toLowerCase()
-        ) {
-            return res.status(400).json({
-                message: "Last name does not match customer record"
-            });
-        }
-
-        if (
-            phone &&
-            phone !== customerPhone
-        ) {
-            return res.status(400).json({
-                message: "Phone number does not match customer record"
-            });
-        }
-
         const result =
             await nibssService.insertBvn(
                 bvn,
@@ -350,7 +231,6 @@ exports.insertBvn = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(
             "Insert BVN error:",
             error.response?.data || error.message
@@ -362,14 +242,12 @@ exports.insertBvn = async (req, res) => {
     }
 };
 
-
 // ======================================================
 // VALIDATE BVN
 // ======================================================
 
 exports.validateBvn = async (req, res) => {
     try {
-
         const { bvn } = req.body;
 
         if (!bvn) {
@@ -397,6 +275,9 @@ exports.validateBvn = async (req, res) => {
             });
         }
 
+        /*
+         * NIBSS token is handled internally.
+         */
         const result =
             await nibssService.validateBvn(bvn);
 
@@ -410,7 +291,6 @@ exports.validateBvn = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(
             "Validate BVN error:",
             error.response?.data || error.message
@@ -422,14 +302,12 @@ exports.validateBvn = async (req, res) => {
     }
 };
 
-
 // ======================================================
 // ACCOUNT NAME ENQUIRY
 // ======================================================
 
 exports.nameEnquiry = async (req, res) => {
     try {
-
         const { accountNo } = req.body;
 
         if (!accountNo) {
@@ -438,10 +316,11 @@ exports.nameEnquiry = async (req, res) => {
             });
         }
 
+        /*
+         * NIBSS authentication is handled internally.
+         */
         const result =
-            await nibssService.nameEnquiry(
-                accountNo
-            );
+            await nibssService.nameEnquiry(accountNo);
 
         return res.status(200).json({
             message: "Account name enquiry successful",
@@ -449,18 +328,17 @@ exports.nameEnquiry = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(
             "Name enquiry error:",
             error.response?.data || error.message
         );
 
         return res.status(500).json({
-            message: "Failed to perform account name enquiry"
+            message:
+                "Failed to perform account name enquiry"
         });
     }
 };
-
 
 // ======================================================
 // TRANSFER
@@ -468,7 +346,6 @@ exports.nameEnquiry = async (req, res) => {
 
 exports.transfer = async (req, res) => {
     try {
-
         const {
             from,
             to,
@@ -518,17 +395,15 @@ exports.transfer = async (req, res) => {
             });
         }
 
+        /*
+         * NIBSS token is handled internally.
+         */
         const result =
             await nibssService.transfer(
                 from,
                 to,
                 Number(amount)
             );
-
-        /*
-         * NIBSS may return transactionId depending on
-         * the simulated API response.
-         */
 
         const transactionReference =
             result.transactionId ||
@@ -556,7 +431,6 @@ exports.transfer = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(
             "Transfer error:",
             error.response?.data || error.message
@@ -568,14 +442,12 @@ exports.transfer = async (req, res) => {
     }
 };
 
-
 // ======================================================
 // TRANSFER STATUS
 // ======================================================
 
 exports.getTransferStatus = async (req, res) => {
     try {
-
         const { transactionId } = req.body;
 
         if (!transactionId) {
@@ -584,6 +456,9 @@ exports.getTransferStatus = async (req, res) => {
             });
         }
 
+        /*
+         * NIBSS token is handled internally.
+         */
         const result =
             await nibssService.getTransferStatus(
                 transactionId
@@ -596,7 +471,6 @@ exports.getTransferStatus = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(
             "Transfer status error:",
             error.response?.data || error.message
@@ -609,7 +483,6 @@ exports.getTransferStatus = async (req, res) => {
     }
 };
 
-
 // ======================================================
 // ACCOUNT BALANCE
 // CUSTOMER
@@ -617,7 +490,6 @@ exports.getTransferStatus = async (req, res) => {
 
 exports.getAccountBalance = async (req, res) => {
     try {
-
         const { accountNumber } = req.body;
 
         if (!accountNumber) {
@@ -640,6 +512,9 @@ exports.getAccountBalance = async (req, res) => {
             });
         }
 
+        /*
+         * NIBSS token is handled internally.
+         */
         const result =
             await nibssService.getAccountBalance(
                 accountNumber
@@ -652,7 +527,6 @@ exports.getAccountBalance = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(
             "Account balance error:",
             error.response?.data || error.message
@@ -665,20 +539,13 @@ exports.getAccountBalance = async (req, res) => {
     }
 };
 
-
 // ======================================================
 // INSERT NIN
 // ======================================================
 
 exports.insertNin = async (req, res) => {
     try {
-
-        const {
-            nin,
-            firstName,
-            lastName,
-            dob
-        } = req.body;
+        const { nin } = req.body;
 
         if (!nin) {
             return res.status(400).json({
@@ -693,6 +560,12 @@ exports.insertNin = async (req, res) => {
             });
         }
 
+        /*
+         * Identity information comes from the
+         * authenticated customer.
+         *
+         * The frontend only sends the NIN.
+         */
         const customerFirstName =
             req.customer.firstName;
 
@@ -702,28 +575,9 @@ exports.insertNin = async (req, res) => {
         const customerDob =
             req.customer.dob;
 
-        if (
-            firstName &&
-            firstName.toLowerCase() !==
-            customerFirstName.toLowerCase()
-        ) {
-            return res.status(400).json({
-                message:
-                    "First name does not match customer record"
-            });
-        }
-
-        if (
-            lastName &&
-            lastName.toLowerCase() !==
-            customerLastName.toLowerCase()
-        ) {
-            return res.status(400).json({
-                message:
-                    "Last name does not match customer record"
-            });
-        }
-
+        /*
+         * NIBSS token is handled internally.
+         */
         const result =
             await nibssService.insertNin(
                 nin,
@@ -742,7 +596,6 @@ exports.insertNin = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(
             "Insert NIN error:",
             error.response?.data || error.message
@@ -754,14 +607,12 @@ exports.insertNin = async (req, res) => {
     }
 };
 
-
 // ======================================================
 // VALIDATE NIN
 // ======================================================
 
 exports.validateNin = async (req, res) => {
     try {
-
         const { nin } = req.body;
 
         if (!nin) {
@@ -783,6 +634,9 @@ exports.validateNin = async (req, res) => {
             });
         }
 
+        /*
+         * NIBSS token is handled internally.
+         */
         const result =
             await nibssService.validateNin(nin);
 
@@ -792,7 +646,6 @@ exports.validateNin = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(
             "Validate NIN error:",
             error.response?.data || error.message

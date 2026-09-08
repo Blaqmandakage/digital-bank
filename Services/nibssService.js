@@ -1,5 +1,3 @@
-
-
 const axios = require("axios");
 
 const nibssApi = axios.create({
@@ -26,7 +24,7 @@ const getInternalToken = async (forceRefresh = false) => {
         return cachedToken;
     }
 
-    // Prevent multiple requests for a token at the same time
+    // Prevent multiple token requests at the same time
     if (tokenRequest) {
         return tokenRequest;
     }
@@ -57,14 +55,17 @@ const getInternalToken = async (forceRefresh = false) => {
                 response.data?.data?.token;
 
             if (!token) {
-                throw new Error("NIBSS token was not returned");
+                throw new Error(
+                    "NIBSS token was not returned"
+                );
             }
 
             cachedToken = token;
 
-            // NIBSS tokens expire after about 1 hour.
+            // NIBSS token expires after about 1 hour.
             // Refresh slightly before expiry.
-            tokenExpiresAt = Date.now() + (55 * 60 * 1000);
+            tokenExpiresAt =
+                Date.now() + (55 * 60 * 1000);
 
             return cachedToken;
 
@@ -101,6 +102,7 @@ const authenticatedRequest = async (config) => {
 
         const response = await nibssApi.request({
             ...config,
+
             headers: {
                 ...(config.headers || {}),
                 Authorization: `Bearer ${token}`
@@ -115,12 +117,15 @@ const authenticatedRequest = async (config) => {
         // get a fresh token and retry once.
         if (error.response?.status === 401) {
 
-            console.log("NIBSS token expired. Refreshing token...");
+            console.log(
+                "NIBSS token expired. Refreshing token..."
+            );
 
             token = await getInternalToken(true);
 
             const response = await nibssApi.request({
                 ...config,
+
                 headers: {
                     ...(config.headers || {}),
                     Authorization: `Bearer ${token}`
@@ -136,43 +141,6 @@ const authenticatedRequest = async (config) => {
 
 
 // ======================================================
-// FINTECH ONBOARDING
-// ======================================================
-
-exports.onboardFintech = async (name, email) => {
-
-    const response = await nibssApi.post(
-        "/api/fintech/onboard",
-        {
-            name,
-            email
-        }
-    );
-
-    return response.data;
-};
-
-
-// ======================================================
-// MANUAL TOKEN FUNCTION
-// BACKEND USE ONLY
-// ======================================================
-
-exports.getToken = async (apiKey, apiSecret) => {
-
-    const response = await nibssApi.post(
-        "/api/auth/token",
-        {
-            apiKey,
-            apiSecret
-        }
-    );
-
-    return response.data;
-};
-
-
-// ======================================================
 // CREATE ACCOUNT
 // ======================================================
 
@@ -183,13 +151,17 @@ exports.createAccount = async (
 ) => {
 
     const response = await authenticatedRequest({
+
         method: "POST",
+
         url: "/api/account/create",
+
         data: {
             kycType,
             kycID,
             dob
         }
+
     });
 
     return response.data;
@@ -203,8 +175,11 @@ exports.createAccount = async (
 exports.getAllAccounts = async () => {
 
     const response = await authenticatedRequest({
+
         method: "GET",
+
         url: "/api/accounts"
+
     });
 
     return response.data;
@@ -218,11 +193,15 @@ exports.getAllAccounts = async () => {
 exports.validateBvn = async (bvn) => {
 
     const response = await authenticatedRequest({
+
         method: "POST",
+
         url: "/api/validateBvn",
+
         data: {
             bvn
         }
+
     });
 
     return response.data;
@@ -236,8 +215,11 @@ exports.validateBvn = async (bvn) => {
 exports.nameEnquiry = async (accountNo) => {
 
     const response = await authenticatedRequest({
+
         method: "GET",
+
         url: `/api/account/name-enquiry/${accountNo}`
+
     });
 
     return response.data;
@@ -255,13 +237,17 @@ exports.transfer = async (
 ) => {
 
     const response = await authenticatedRequest({
+
         method: "POST",
+
         url: "/api/transfer",
+
         data: {
             from,
             to,
             amount
         }
+
     });
 
     return response.data;
@@ -281,8 +267,11 @@ exports.insertBvn = async (
 ) => {
 
     const response = await authenticatedRequest({
+
         method: "POST",
+
         url: "/api/insertBvn",
+
         data: {
             bvn,
             firstName,
@@ -290,6 +279,7 @@ exports.insertBvn = async (
             dob,
             phone
         }
+
     });
 
     return response.data;
@@ -305,8 +295,11 @@ exports.getTransferStatus = async (
 ) => {
 
     const response = await authenticatedRequest({
+
         method: "GET",
+
         url: `/api/transaction/${transactionId}`
+
     });
 
     return response.data;
@@ -322,8 +315,11 @@ exports.getAccountBalance = async (
 ) => {
 
     const response = await authenticatedRequest({
+
         method: "GET",
+
         url: `/api/account/balance/${accountNumber}`
+
     });
 
     return response.data;
@@ -342,14 +338,18 @@ exports.insertNin = async (
 ) => {
 
     const response = await authenticatedRequest({
+
         method: "POST",
+
         url: "/api/insertNin",
+
         data: {
             nin,
             firstName,
             lastName,
             dob
         }
+
     });
 
     return response.data;
@@ -363,11 +363,15 @@ exports.insertNin = async (
 exports.validateNin = async (nin) => {
 
     const response = await authenticatedRequest({
+
         method: "POST",
+
         url: "/api/validateNin",
+
         data: {
             nin
         }
+
     });
 
     return response.data;

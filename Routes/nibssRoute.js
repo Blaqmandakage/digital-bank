@@ -1,29 +1,10 @@
-
-
 const express = require("express");
+
 const router = express.Router();
 
 const NibssController = require("../Controllers/NibssController");
+
 const { protect } = require("../Middleware/customerAuth");
-
-
-// ======================================================
-// INTERNAL / SETUP ROUTES
-// ======================================================
-
-// Fintech onboarding
-router.post(
-    "/onboard",
-    NibssController.onboardFintech
-);
-
-// NIBSS token generation
-// Backend/setup use only
-router.post(
-    "/token",
-    NibssController.getToken
-);
-
 
 // ======================================================
 // CUSTOMER ACCOUNT ROUTES
@@ -36,7 +17,6 @@ router.post(
     NibssController.createAccount
 );
 
-
 // Get authenticated customer's accounts
 router.get(
     "/my-accounts",
@@ -44,14 +24,12 @@ router.get(
     NibssController.getMyAccounts
 );
 
-
 // Get account balance
 router.post(
     "/account-balance",
     protect,
     NibssController.getAccountBalance
 );
-
 
 // ======================================================
 // CUSTOMER BVN ROUTES
@@ -64,14 +42,12 @@ router.post(
     NibssController.insertBvn
 );
 
-
 // Validate BVN
 router.post(
     "/validate-bvn",
     protect,
     NibssController.validateBvn
 );
-
 
 // ======================================================
 // CUSTOMER NIN ROUTES
@@ -84,14 +60,12 @@ router.post(
     NibssController.insertNin
 );
 
-
 // Validate NIN
 router.post(
     "/validate-nin",
     protect,
     NibssController.validateNin
 );
-
 
 // ======================================================
 // CUSTOMER TRANSFER ROUTES
@@ -104,7 +78,6 @@ router.post(
     NibssController.nameEnquiry
 );
 
-
 // Transfer money
 router.post(
     "/transfer",
@@ -112,14 +85,12 @@ router.post(
     NibssController.transfer
 );
 
-
 // Check transfer status
 router.post(
     "/transfer-status",
     protect,
     NibssController.getTransferStatus
 );
-
 
 // ======================================================
 // INTERNAL ACCOUNT ROUTES
@@ -132,6 +103,5 @@ router.post(
     protect,
     NibssController.getAllAccounts
 );
-
 
 module.exports = router;
