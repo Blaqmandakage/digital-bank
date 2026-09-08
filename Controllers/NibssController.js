@@ -6,96 +6,198 @@ const Transaction = require("../Models/Transactions");
 // CREATE BANK ACCOUNT
 // ======================================================
 
+// CREATE BANK ACCOUNT
 exports.createAccount = async (req, res) => {
-  try {
-    // Customer can only have one account
-    const existingAccount = await Account.findOne({
-      customer: req.customer._id,
-    });
+    try {
+        // Customer must have a BVN
+        if (!req.customer.bvn) {
+            return res.status(400).json({
+                message: "Please register your BVN first"
+            });
+        }
 
-    if (existingAccount) {
-      return res.status(409).json({
-        message: "Customer already has a bank account",
-        data: existingAccount,
-      });
+        // BVN must be validated
+        if (!req.customer.isVerified) {
+            return res.status(400).json({
+                message: "Please validate your BVN first"
+            });
+        }
+
+        // Customer can only have one account
+        const existingAccount = await Account.findOne({
+            customer: req.customer._id
+        });
+
+        if (existingAccount) {
+            return res.status(400).json({
+                message: "Customer already has a bank account"
+            });
+        }
+
+        // NIBSS expects lowercase "bvn"
+        const kycType = "bvn";
+        const kycID = req.customer.bvn;
+        const dob = req.customer.dob;
+
+        // Create account through NIBSS
+        const result = await nibssService.createAccount(
+            kycType,
+            kycID,
+            dob
+        );
+
+        // NIBSS returns these fields directly
+        const accountNumber = result.accountNumber;
+        const accountName = result.accountName;
+        const bankCode = result.bankCode;
+        const bankName = result.bankName;
+        const balance = result.balance;
+
+        if (!accountNumber || !accountName) {
+            console.error("Invalid NIBSS account response:", result);
+
+            return res.status(500).json({
+                message: "NIBSS did not return account information"
+            });
+        }
+
+        // Check account name against registered customer name
+        const nibssName = accountName.toLowerCase().trim();
+
+        const customerFirstName =
+            req.customer.firstName.toLowerCase().trim();
+
+        const customerLastName =
+            req.customer.lastName.toLowerCase().trim();
+
+        if (
+            !nibssName.includes(customerFirstName) ||
+            !nibssName.includes(customerLastName)
+        ) {
+            return res.status(400).json({
+                message: "Account name does not match customer information"
+            });
+        }
+
+        // Save account locally
+        const account = await Account.create({
+            customer: req.customer._id,
+            accountNumber,
+            accountName,
+            bankCode: bankCode || null,
+            bankName: bankName || null,
+            balance: balance ?? 0,
+            kycType,
+            kycID
+        });
+
+        return res.status(201).json({
+            message: "Account created successfully",
+            data: account
+        });
+
+    } catch (error) {
+        console.error(
+            "Create account error:",
+            error.response?.data || error.message
+        );
+
+        return res.status(500).json({
+            message: "Failed to create account"
+        });
     }
-
-    // Customer must have a registered BVN
-    if (!req.customer.bvn) {
-      return res.status(400).json({
-        message: "Please register your BVN first",
-      });
-    }
-
-    // Customer must have a verified BVN
-    if (!req.customer.isVerified) {
-      return res.status(400).json({
-        message: "Please verify your BVN first",
-      });
-    }
-
-    const kycType = "bvn";
-    const kycID = req.customer.bvn;
-    const dob = req.customer.dob;
-
-    /*
-     * The frontend does NOT send a NIBSS token.
-     *
-     * nibssService handles NIBSS authentication
-     * internally using the backend credentials.
-     */
-    const result = await nibssService.createAccount(kycType, kycID, dob);
-
-    const nibssAccount = result.account;
-
-    if (!nibssAccount) {
-      return res.status(500).json({
-        message: "NIBSS did not return account information",
-      });
-    }
-
-    // Make sure the account name belongs to the customer
-    const customerFirstName = req.customer.firstName.toLowerCase();
-
-    const customerLastName = req.customer.lastName.toLowerCase();
-
-    const accountName = nibssAccount.accountName.toLowerCase();
-
-    const nameMatches =
-      accountName.includes(customerFirstName) &&
-      accountName.includes(customerLastName);
-
-    if (!nameMatches) {
-      return res.status(400).json({
-        message: "Account name does not match customer name",
-      });
-    }
-
-    const account = await Account.create({
-      customer: req.customer._id,
-      accountNumber: nibssAccount.accountNumber,
-      accountName: nibssAccount.accountName,
-      bankCode: nibssAccount.bankCode,
-      bankName: nibssAccount.bankName,
-      kycType: nibssAccount.kycType,
-      kycID: nibssAccount.kycID,
-    });
-
-    return res.status(201).json({
-      message: "Account created successfully",
-      data: account,
-    });
-  } catch (error) {
-    console.error(
-      "Create account error:",
-      error.response?.data || error.message,
-    );
-
-    return res.status(500).json({
-      message: "Failed to create account",
-    });
-  }
 };
+
+// exports.createAccount = async (req, res) => {
+//   try {
+//     // Customer can only have one account
+//     const existingAccount = await Account.findOne({
+//       customer: req.customer._id,
+//     });
+
+//     if (existingAccount) {
+//       return res.status(409).json({
+//         message: "Customer already has a bank account",
+//         data: existingAccount,
+//       });
+//     }
+
+//     // Customer must have a registered BVN
+//     if (!req.customer.bvn) {
+//       return res.status(400).json({
+//         message: "Please register your BVN first",
+//       });
+//     }
+
+//     // Customer must have a verified BVN
+//     if (!req.customer.isVerified) {
+//       return res.status(400).json({
+//         message: "Please verify your BVN first",
+//       });
+//     }
+
+//     const kycType = "bvn";
+//     const kycID = req.customer.bvn;
+//     const dob = req.customer.dob;
+
+//     /*
+//      * The frontend does NOT send a NIBSS token.
+//      *
+//      * nibssService handles NIBSS authentication
+//      * internally using the backend credentials.
+//      */
+//     const result = await nibssService.createAccount(kycType, kycID, dob);
+
+//     const nibssAccount = result.account;
+
+//     if (!nibssAccount) {
+//       return res.status(500).json({
+//         message: "NIBSS did not return account information",
+//       });
+//     }
+
+//     // Make sure the account name belongs to the customer
+//     const customerFirstName = req.customer.firstName.toLowerCase();
+
+//     const customerLastName = req.customer.lastName.toLowerCase();
+
+//     const accountName = nibssAccount.accountName.toLowerCase();
+
+//     const nameMatches =
+//       accountName.includes(customerFirstName) &&
+//       accountName.includes(customerLastName);
+
+//     if (!nameMatches) {
+//       return res.status(400).json({
+//         message: "Account name does not match customer name",
+//       });
+//     }
+
+//     const account = await Account.create({
+//       customer: req.customer._id,
+//       accountNumber: nibssAccount.accountNumber,
+//       accountName: nibssAccount.accountName,
+//       bankCode: nibssAccount.bankCode,
+//       bankName: nibssAccount.bankName,
+//       kycType: nibssAccount.kycType,
+//       kycID: nibssAccount.kycID,
+//     });
+
+//     return res.status(201).json({
+//       message: "Account created successfully",
+//       data: account,
+//     });
+//   } catch (error) {
+//     console.error(
+//       "Create account error:",
+//       error.response?.data || error.message,
+//     );
+
+//     return res.status(500).json({
+//       message: "Failed to create account",
+//     });
+//   }
+// };
 
 // ======================================================
 // GET MY ACCOUNTS
