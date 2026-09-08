@@ -46,7 +46,7 @@ router.get(
 
 
 // Get account balance
-router.get(
+router.post(
     "/account-balance",
     protect,
     NibssController.getAccountBalance
