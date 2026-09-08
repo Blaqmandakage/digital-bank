@@ -46,6 +46,10 @@ exports.createAccount = async (req, res) => {
             kycID,
             dob
         );
+        console.log(
+    "NIBSS CREATE ACCOUNT RESPONSE:",
+    JSON.stringify(result, null, 2)
+);
 
         // NIBSS returns these fields directly
         const accountNumber = result.accountNumber;
