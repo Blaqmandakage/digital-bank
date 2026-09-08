@@ -47,7 +47,7 @@ router.get(
 
 // Get account balance
 router.get(
-    "/accounts/:accountNumber/balance",
+    "/account-balance",
     protect,
     NibssController.getAccountBalance
 );

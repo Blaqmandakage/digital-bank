@@ -618,7 +618,7 @@ exports.getTransferStatus = async (req, res) => {
 exports.getAccountBalance = async (req, res) => {
     try {
 
-        const { accountNumber } = req.params;
+        const { accountNumber } = req.body;
 
         if (!accountNumber) {
             return res.status(400).json({
