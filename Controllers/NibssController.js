@@ -7,6 +7,7 @@ const Transaction = require("../Models/Transactions");
 // ======================================================
 
 // CREATE BANK ACCOUNT
+// CREATE BANK ACCOUNT
 exports.createAccount = async (req, res) => {
     try {
         // Customer must have a BVN
@@ -107,97 +108,6 @@ exports.createAccount = async (req, res) => {
         });
     }
 };
-
-// exports.createAccount = async (req, res) => {
-//   try {
-//     // Customer can only have one account
-//     const existingAccount = await Account.findOne({
-//       customer: req.customer._id,
-//     });
-
-//     if (existingAccount) {
-//       return res.status(409).json({
-//         message: "Customer already has a bank account",
-//         data: existingAccount,
-//       });
-//     }
-
-//     // Customer must have a registered BVN
-//     if (!req.customer.bvn) {
-//       return res.status(400).json({
-//         message: "Please register your BVN first",
-//       });
-//     }
-
-//     // Customer must have a verified BVN
-//     if (!req.customer.isVerified) {
-//       return res.status(400).json({
-//         message: "Please verify your BVN first",
-//       });
-//     }
-
-//     const kycType = "bvn";
-//     const kycID = req.customer.bvn;
-//     const dob = req.customer.dob;
-
-//     /*
-//      * The frontend does NOT send a NIBSS token.
-//      *
-//      * nibssService handles NIBSS authentication
-//      * internally using the backend credentials.
-//      */
-//     const result = await nibssService.createAccount(kycType, kycID, dob);
-
-//     const nibssAccount = result.account;
-
-//     if (!nibssAccount) {
-//       return res.status(500).json({
-//         message: "NIBSS did not return account information",
-//       });
-//     }
-
-//     // Make sure the account name belongs to the customer
-//     const customerFirstName = req.customer.firstName.toLowerCase();
-
-//     const customerLastName = req.customer.lastName.toLowerCase();
-
-//     const accountName = nibssAccount.accountName.toLowerCase();
-
-//     const nameMatches =
-//       accountName.includes(customerFirstName) &&
-//       accountName.includes(customerLastName);
-
-//     if (!nameMatches) {
-//       return res.status(400).json({
-//         message: "Account name does not match customer name",
-//       });
-//     }
-
-//     const account = await Account.create({
-//       customer: req.customer._id,
-//       accountNumber: nibssAccount.accountNumber,
-//       accountName: nibssAccount.accountName,
-//       bankCode: nibssAccount.bankCode,
-//       bankName: nibssAccount.bankName,
-//       kycType: nibssAccount.kycType,
-//       kycID: nibssAccount.kycID,
-//     });
-
-//     return res.status(201).json({
-//       message: "Account created successfully",
-//       data: account,
-//     });
-//   } catch (error) {
-//     console.error(
-//       "Create account error:",
-//       error.response?.data || error.message,
-//     );
-
-//     return res.status(500).json({
-//       message: "Failed to create account",
-//     });
-//   }
-// };
 
 // ======================================================
 // GET MY ACCOUNTS
