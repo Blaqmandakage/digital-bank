@@ -24,16 +24,16 @@ exports.createAccount = async (req, res) => {
             });
         }
 
-        // Customer can only have one account
-        const existingAccount = await Account.findOne({
-            customer: req.customer._id
-        });
+        // // Customer can only have one account
+        // const existingAccount = await Account.findOne({
+        //     customer: req.customer._id
+        // });
 
-        if (existingAccount) {
-            return res.status(400).json({
-                message: "Customer already has a bank account"
-            });
-        }
+        // if (existingAccount) {
+        //     return res.status(400).json({
+        //         message: "Customer already has a bank account"
+        //     });
+        // }
 
         // NIBSS expects lowercase "bvn"
         const kycType = "bvn";
