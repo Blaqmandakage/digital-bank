@@ -1,3 +1,448 @@
+// const Customer = require("../Models/Customer");
+// const Account = require("../Models/Account");
+// const Transaction = require("../Models/Transactions");
+// const bcrypt = require("bcryptjs");
+// const jwt = require("jsonwebtoken");
+
+
+// // ======================================================
+// // REGISTER CUSTOMER
+// // ======================================================
+
+// exports.register = async (req, res) => {
+
+//   try {
+
+//     const {
+//       firstName,
+//       lastName,
+//       email,
+//       phone,
+//       password,
+//       dob
+//     } = req.body;
+
+
+//     // --------------------------------------------------
+//     // Validate required fields
+//     // --------------------------------------------------
+
+//     if (
+//       !firstName ||
+//       !lastName ||
+//       !email ||
+//       !phone ||
+//       !password ||
+//       !dob
+//     ) {
+
+//       return res.status(400).json({
+//         message: "All registration fields are required"
+//       });
+
+//     }
+
+
+//     // --------------------------------------------------
+//     // Check if customer already exists
+//     // --------------------------------------------------
+
+//     const existingCustomer = await Customer.findOne({
+//       $or: [
+//         { email },
+//         { phone }
+//       ]
+//     });
+
+
+//     if (existingCustomer) {
+
+//       return res.status(400).json({
+//         message: "Customer already exists"
+//       });
+
+//     }
+
+
+//     // --------------------------------------------------
+//     // Hash password
+//     // --------------------------------------------------
+
+//     const hashedPassword = await bcrypt.hash(
+//       password,
+//       10
+//     );
+
+
+//     // --------------------------------------------------
+//     // Create customer
+//     // --------------------------------------------------
+
+//     const customer = await Customer.create({
+
+//       firstName,
+//       lastName,
+//       email,
+//       phone,
+//       dob,
+
+//       password: hashedPassword,
+
+//       // BVN and NIN are intentionally empty
+//       // until the customer registers them.
+//       bvn: null,
+//       nin: null,
+
+//       // BVN is not verified when a customer registers.
+//       isVerified: false
+
+//     });
+
+
+//     // --------------------------------------------------
+//     // Response
+//     // --------------------------------------------------
+
+//     return res.status(201).json({
+
+//       message: "Customer registered successfully",
+
+//       customer: {
+
+//         id: customer._id,
+
+//         firstName: customer.firstName,
+
+//         lastName: customer.lastName,
+
+//         email: customer.email,
+
+//         phone: customer.phone,
+
+//         dob: customer.dob
+
+//       }
+
+//     });
+
+//   } catch (error) {
+
+//     console.error(
+//       "Registration error:",
+//       error
+//     );
+
+//     return res.status(500).json({
+
+//       message: "Internal server error"
+
+//     });
+
+//   }
+
+// };
+
+
+// // ======================================================
+// // CUSTOMER LOGIN
+// // ======================================================
+
+// exports.login = async (req, res) => {
+
+//   try {
+
+//     const {
+//       email,
+//       password
+//     } = req.body;
+
+
+//     // --------------------------------------------------
+//     // Validate login fields
+//     // --------------------------------------------------
+
+//     if (!email || !password) {
+
+//       return res.status(400).json({
+
+//         message: "Email and password are required"
+
+//       });
+
+//     }
+
+
+//     // --------------------------------------------------
+//     // Find customer by email
+//     // --------------------------------------------------
+
+//     const customer = await Customer.findOne({
+//       email
+//     });
+
+
+//     if (!customer) {
+
+//       return res.status(401).json({
+
+//         message: "Invalid email or password"
+
+//       });
+
+//     }
+
+
+//     // --------------------------------------------------
+//     // Compare password
+//     // --------------------------------------------------
+
+//     const isPasswordCorrect =
+//       await bcrypt.compare(
+//         password,
+//         customer.password
+//       );
+
+
+//     if (!isPasswordCorrect) {
+
+//       return res.status(401).json({
+
+//         message: "Invalid email or password"
+
+//       });
+
+//     }
+
+
+//     // --------------------------------------------------
+//     // Generate application JWT
+//     // --------------------------------------------------
+
+//     const token = jwt.sign(
+
+//       {
+//         id: customer._id
+//       },
+
+//       process.env.JWT_SECRET,
+
+//       {
+//         expiresIn: "1d"
+//       }
+
+//     );
+
+
+//     // --------------------------------------------------
+//     // Response
+//     // --------------------------------------------------
+
+//     return res.status(200).json({
+
+//       message: "Login successful",
+
+//       token,
+
+//       customer: {
+
+//         id: customer._id,
+
+//         firstName: customer.firstName,
+
+//         lastName: customer.lastName,
+
+//         email: customer.email,
+
+//         phone: customer.phone
+
+//       }
+
+//     });
+
+//   } catch (error) {
+
+//     console.error(
+//       "Login error:",
+//       error
+//     );
+
+//     return res.status(500).json({
+
+//       message: "Internal server error"
+
+//     });
+
+//   }
+
+// };
+
+
+// // ======================================================
+// // GET CUSTOMER PROFILE
+// // ======================================================
+
+// exports.getProfile = async (req, res) => {
+
+//   try {
+
+//     // --------------------------------------------------
+//     // Check whether customer already has an account
+//     // --------------------------------------------------
+
+//     const account = await Account.findOne({
+
+//       customer: req.customer._id
+
+//     });
+
+
+//     // --------------------------------------------------
+//     // Return customer onboarding status
+//     // --------------------------------------------------
+
+//     return res.status(200).json({
+
+//       message: "Customer profile retrieved successfully",
+
+//       customer: {
+
+//         id: req.customer._id,
+
+//         firstName: req.customer.firstName,
+
+//         lastName: req.customer.lastName,
+
+//         email: req.customer.email,
+
+//         phone: req.customer.phone,
+
+//         hasBvn: !!req.customer.bvn,
+
+//         bvnVerified: req.customer.isVerified,
+
+//         hasAccount: !!account
+
+//       }
+
+//     });
+
+//   } catch (error) {
+
+//     console.error(
+//       "Get profile error:",
+//       error
+//     );
+
+//     return res.status(500).json({
+
+//       message: "Failed to retrieve customer profile"
+
+//     });
+
+//   }
+
+// };
+
+
+// // ======================================================
+// // GET CUSTOMER TRANSACTIONS
+// // ======================================================
+
+// exports.getMyTransactions = async (req, res) => {
+
+//   try {
+
+//     // --------------------------------------------------
+//     // Find all accounts belonging to logged-in customer
+//     // --------------------------------------------------
+
+//     const accounts = await Account.find({
+
+//       customer: req.customer._id
+
+//     });
+
+
+//     // --------------------------------------------------
+//     // Extract account IDs
+//     // --------------------------------------------------
+
+//     const accountIds = accounts.map(
+//       (account) => account._id
+//     );
+
+
+//     // --------------------------------------------------
+//     // Find transactions involving customer's accounts
+//     // --------------------------------------------------
+
+//     const transactions = await Transaction.find({
+
+//       $or: [
+
+//         {
+//           senderAccount: {
+//             $in: accountIds
+//           }
+//         },
+
+//         {
+//           receiverAccount: {
+//             $in: accountIds
+//           }
+//         }
+
+//       ]
+
+//     })
+
+//       .populate(
+//         "senderAccount",
+//         "accountNumber accountName"
+//       )
+
+//       .populate(
+//         "receiverAccount",
+//         "accountNumber accountName"
+//       )
+
+//       .sort({
+//         createdAt: -1
+//       });
+
+
+//     // --------------------------------------------------
+//     // Response
+//     // --------------------------------------------------
+
+//     return res.status(200).json({
+
+//       message:
+//         "Customer transactions retrieved successfully",
+
+//       count: transactions.length,
+
+//       data: transactions
+
+//     });
+
+//   } catch (error) {
+
+//     console.error(
+//       "Get customer transactions error:",
+//       error
+//     );
+
+//     return res.status(500).json({
+
+//       message:
+//         "Failed to retrieve customer transactions"
+
+//     });
+
+//   }
+
+// };
 const Customer = require("../Models/Customer");
 const Account = require("../Models/Account");
 const Transaction = require("../Models/Transactions");
@@ -377,25 +822,11 @@ exports.getMyTransactions = async (req, res) => {
     // --------------------------------------------------
 
     const transactions = await Transaction.find({
-
       $or: [
-
-        {
-          senderAccount: {
-            $in: accountIds
-          }
-        },
-
-        {
-          receiverAccount: {
-            $in: accountIds
-          }
-        }
-
-      ]
-
+        { senderAccount: { $in: accountIds } },
+        { receiverAccount: { $in: accountIds } },
+      ],
     })
-
       .populate(
         "senderAccount",
         "accountNumber accountName"
